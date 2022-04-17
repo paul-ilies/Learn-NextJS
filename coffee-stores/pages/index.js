@@ -2,7 +2,18 @@ import Head from 'next/head'
 import Banner from '../components/banner'
 import styles from '../styles/Home.module.css'
 import Image from "next/image"
-export default function Home() {
+import Card from '../components/Card'
+import data from "../data/coffee-stores.json"
+
+export const getStaticProps = async (context) => {
+  return {
+    props: {
+      data
+    }
+  }
+}
+
+export default function Home(props) {
 
   const handleOnButtonClick = () => {
     console.log("hello")
@@ -24,6 +35,27 @@ export default function Home() {
         <div className={styles.heroImage}>
           <Image src="/static/hero-image.png" alt="image-hero" width={700} height={400} />
         </div>
+
+        {props.data.length &&
+          (
+            <>
+              <h2 className={styles.heading2}>Coffee Stores</h2>
+              <div className={styles.cardLayout}>
+                {props.data.map(el => {
+                  return <Card
+                    key={el?.id}
+                    name={el?.name}
+                    imgUrl={el?.imgUrl}
+                    href={`/coffee-store/${el.id}`}
+                    className={styles.card}
+                  />
+                })}
+
+              </div>
+            </>
+          ) || null
+        }
+
 
       </main>
     </div>
