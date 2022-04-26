@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
@@ -5,6 +6,8 @@ import styles from "../../styles/coffee-store.module.css"
 import Image from "next/image";
 import cls from "classnames";
 import { fetchCoffeeStores } from "../../lib/coffee-stores";
+import { StoreContext } from "../../store/store-context";
+import { isEmpty } from "../../utils";
 export const getStaticProps = async (context) => {
     const { params } = context
     let findStoreById
@@ -37,11 +40,65 @@ export const getStaticPaths = async () => {
 }
 
 
-const SingleCoffeeStore = ({ coffeeStore }) => {
+const SingleCoffeeStore = (props) => {
+    const [coffeeStore, setCoffeeStore] = useState(props.coffeeStore)
     const router = useRouter();
+    const {
+        state: {
+            coffeeStores
+        }
+    } = useContext(StoreContext)
+
     if (router.isFallback) {
         return <div>Hello</div>
     }
+    const id = router.query.id;
+
+
+    const handleCreateCoffeeStore = async (coffeeSore) => {
+        try {
+            const {
+                Id,
+                voting,
+                name,
+                address,
+                neighbourhood,
+                imgUrl
+            } = coffeeSore
+            const res = await fetch("/api/createCoffeeStore", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Id,
+                    voting,
+                    name,
+                    address: address || null,
+                    neighbourhood: neighbourhood || null,
+                    imgUrl
+                })
+            })
+            const dbCoffeeStore = await res.json()
+            console.log(dbCoffeeStore)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+
+        if (isEmpty(props.coffeeStore)) {
+            if (coffeeStores.length) {
+                const findStoreById = coffeeStores.find(el => el.fsq_id === id)
+                if (findStoreById) {
+                    setCoffeeStore(findStoreById)
+                    handleCreateCoffeeStore(findStoreById)
+                }
+            }
+        }
+        else {
+            handleCreateCoffeeStore(props.coffeeStore)
+        }
+    }, [coffeeStores, id, props.coffeeStore])
 
     const handleUpvoteButton = (e) => {
         e.preventDefault();

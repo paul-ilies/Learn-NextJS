@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useContext } from "react"
 import Head from 'next/head'
 import Banner from '../components/banner'
 import styles from '../styles/Home.module.css'
@@ -6,6 +6,7 @@ import Image from "next/image"
 import Card from '../components/Card'
 import { fetchCoffeeStores } from '../lib/coffee-stores'
 import useTrackLocation from '../hooks/use-track-location'
+import { ACTION_TYPES, StoreContext } from "../store/store-context"
 
 export const getStaticProps = async (context) => {
 
@@ -18,19 +19,27 @@ export const getStaticProps = async (context) => {
 }
 
 export default function Home({ data }) {
-  const { handleTrackLocation, latLong, locationErrorMsg, isFindingLocation } = useTrackLocation()
-  const [coffeeStores, setCoffeeStores] = useState([])
+  const { handleTrackLocation, locationErrorMsg, isFindingLocation } = useTrackLocation()
+  // const [coffeeStores, setCoffeeStores] = useState([])
   const [error, setError] = useState(null)
   const handleOnButtonClick = () => {
     handleTrackLocation()
   }
+  const { dispatch, state } = useContext(StoreContext)
+  const { coffeeStores, latLong } = state
 
   useEffect(() => {
     async function fetchLocation() {
       if (latLong) {
         try {
-          const fetchLocations = await fetchCoffeeStores(latLong)
-          setCoffeeStores(fetchLocations)
+          const fetchLocations = await fetch(`/api/getCoffeeStoresByLocations?latLong=${latLong}&limit=10`)
+          const coffeeStores = await fetchLocations.json()
+          dispatch({
+            type: ACTION_TYPES.SET_COFFEE_STORES,
+            payload: {
+              coffeeStores
+            }
+          })
         } catch (error) {
           setError(error)
         }
@@ -38,7 +47,7 @@ export default function Home({ data }) {
 
     }
     fetchLocation()
-  }, [latLong])
+  }, [dispatch, latLong])
 
   return (
     <div className={styles.container}>
