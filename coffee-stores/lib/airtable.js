@@ -5,6 +5,7 @@ const table = base('CoffeeStores')
 
 const getRecord = (record) => {
     return {
+        recordId: record.id,
         ...record.fields
     }
 }

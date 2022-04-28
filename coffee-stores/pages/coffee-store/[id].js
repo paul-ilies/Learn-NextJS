@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/router";
+import useSWR from 'swr'
 import Link from "next/link";
 import Head from "next/head";
 import styles from "../../styles/coffee-store.module.css"
@@ -38,10 +39,14 @@ export const getStaticPaths = async () => {
         fallback: true
     }
 }
+export const fetcher = (url) => fetch(url).then((res) => res.json());
+
 
 
 const SingleCoffeeStore = (props) => {
     const [coffeeStore, setCoffeeStore] = useState(props.coffeeStore)
+    const [votingCount, setVotingCount] = useState(0)
+
     const router = useRouter();
     const {
         state: {
@@ -49,16 +54,14 @@ const SingleCoffeeStore = (props) => {
         }
     } = useContext(StoreContext)
 
-    if (router.isFallback) {
-        return <div>Hello</div>
-    }
+
     const id = router.query.id;
 
 
     const handleCreateCoffeeStore = async (coffeeSore) => {
         try {
             const {
-                Id,
+                fsq_id,
                 voting,
                 name,
                 address,
@@ -69,7 +72,7 @@ const SingleCoffeeStore = (props) => {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    Id,
+                    Id: fsq_id,
                     voting,
                     name,
                     address: address || null,
@@ -99,11 +102,22 @@ const SingleCoffeeStore = (props) => {
             handleCreateCoffeeStore(props.coffeeStore)
         }
     }, [coffeeStores, id, props.coffeeStore])
-
+    const { data, error } = useSWR(`/api/getCoffeeStoreById?id=${id}`, fetcher)
+    useEffect(() => {
+        if (data && data.length) {
+            console.log(data[0])
+            setCoffeeStore(data[0])
+            setVotingCount(data[0].voting)
+        }
+        if (error) {
+            return <div>problemos</div>
+        }
+    }, [data, error])
     const handleUpvoteButton = (e) => {
         e.preventDefault();
-        console.log("vote")
+        setVotingCount((prev) => prev + 1)
     }
+
     return (
         <div className={styles.layout}>
             <Head>
@@ -140,7 +154,7 @@ const SingleCoffeeStore = (props) => {
                     </div>}
                     <div className={styles.iconWrapper}>
                         <Image width={24} height={24} alt="icon" src="/static/star.svg" />
-                        <p className={styles.text}>1</p>
+                        <p className={styles.text}>{votingCount}</p>
                     </div>
                     <button className={styles.upvoteButton} onClick={handleUpvoteButton} >Up Vote</button>
                 </div>
